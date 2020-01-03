@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>org.gradle</groupId>
+  <artifactId>dependencyProblem</artifactId>
+  <versioning>
+    <latest>6.2.2</latest>
+    <release>6.2.2</release>
+    <versions>
+      <version>6.2-20200102080000+0000</version>
+      <version>6.3</version>
+      <version>6.2.1</version>
+      <version>6.2.2</version>
+    </versions>
+    <lastUpdated>20200102231617</lastUpdated>
+  </versioning>
+</metadata>
