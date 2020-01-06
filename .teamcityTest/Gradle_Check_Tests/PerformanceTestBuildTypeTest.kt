@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+import Gradle_Check.model.JsonGradleSubprojectProvider
+import model.CIBuildModel
+import model.PerformanceTestType
+import model.SpecificBuild
+import model.Stage
+import model.StageNames
+import model.TestCoverage
+import model.TestType
 import common.JvmVendor
 import common.JvmVersion
 import common.Os
@@ -21,18 +29,13 @@ import configurations.BaseGradleBuildType
 import configurations.PerformanceTestCoordinator
 import jetbrains.buildServer.configs.kotlin.v2018_2.BuildStep
 import jetbrains.buildServer.configs.kotlin.v2018_2.buildSteps.GradleBuildStep
-import model.PerformanceTestType
-import model.SpecificBuild
-import model.Stage
-import model.StageNames
-import model.TestCoverage
-import model.TestType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.io.File
 
 class PerformanceTestBuildTypeTest {
     private
-    val buildModel = model.CIBuildModel(buildScanTags = listOf("Check"))
+    val buildModel = CIBuildModel(buildScanTags = listOf("Check"), subProjectsProvider = JsonGradleSubprojectProvider(File("../.teamcity/subprojects.json")))
 
     @Test
     fun `create correct PerformanceTest build type`() {

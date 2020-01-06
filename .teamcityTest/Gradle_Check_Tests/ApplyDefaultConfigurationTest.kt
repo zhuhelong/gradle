@@ -1,3 +1,5 @@
+import Gradle_Check.model.JsonGradleSubprojectProvider
+import model.CIBuildModel
 import common.Os
 import configurations.BaseGradleBuildType
 import configurations.applyDefaults
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
+import java.io.File
 
 /*
  * Copyright 2019 the original author or authors.
@@ -42,7 +45,7 @@ class ApplyDefaultConfigurationTest {
     val steps = BuildSteps()
 
     private
-    val buildModel = model.CIBuildModel(buildScanTags = listOf("Check"))
+    val buildModel = CIBuildModel(buildScanTags = listOf("Check"), subProjectsProvider = JsonGradleSubprojectProvider(File("../.teamcity/subprojects.json")))
 
     @BeforeEach
     fun setUp() {

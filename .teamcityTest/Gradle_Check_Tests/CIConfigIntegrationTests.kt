@@ -1,3 +1,5 @@
+import Gradle_Check.model.JsonGradleSubprojectProvider
+import Gradle_Check.model.ignoredSubprojects
 import common.JvmCategory
 import common.JvmVendor
 import common.JvmVersion
@@ -26,18 +28,19 @@ import projects.StageProject
 import java.io.File
 
 class CIConfigIntegrationTests {
+    private
+    val buildModel = CIBuildModel(subProjectsProvider = JsonGradleSubprojectProvider(File("../.teamcity/subprojects.json")))
+
     @Test
     fun configurationTreeCanBeGenerated() {
-        val model = CIBuildModel()
-        val rootProject = RootProject(model)
-        assertEquals(rootProject.subProjects.size, model.stages.size + 1)
-        assertEquals(rootProject.buildTypes.size, model.stages.size)
+        val rootProject = RootProject(buildModel)
+        assertEquals(rootProject.subProjects.size, buildModel.stages.size + 1)
+        assertEquals(rootProject.buildTypes.size, buildModel.stages.size)
     }
 
     @Test
     fun macBuildsHasEmptyRepoMirrorUrlsParam() {
-        val model = CIBuildModel()
-        val rootProject = RootProject(model)
+        val rootProject = RootProject(buildModel)
         val readyForRelease = rootProject.searchSubproject("Gradle_Check_Stage_ReadyforRelease")
         val macBuilds = readyForRelease.subProjects.filter { it.name.contains("Macos") }.flatMap { (it as FunctionalTestProject).functionalTests }
         assertTrue(macBuilds.isNotEmpty())
@@ -46,8 +49,7 @@ class CIConfigIntegrationTests {
 
     @Test
     fun macOSBuildsSubset() {
-        val m = CIBuildModel()
-        val p = RootProject(m)
+        val p = RootProject(buildModel)
         val readyForRelease = p.subProjects.find { it.name.contains(StageNames.READY_FOR_RELEASE.stageName) }!!
         val macOS = readyForRelease.subProjects.find { it.name.contains("Macos") }!!
 
@@ -60,8 +62,7 @@ class CIConfigIntegrationTests {
 
     @Test
     fun configurationsHaveDependencies() {
-        val m = CIBuildModel()
-        val p = RootProject(m)
+        val p = RootProject(buildModel)
         val stagePassConfigs = p.buildTypes
         stagePassConfigs.forEach {
             val stageNumber = stagePassConfigs.indexOf(it) + 1
@@ -69,9 +70,9 @@ class CIConfigIntegrationTests {
             it.dependencies.items.forEach {
                 println("--> " + it.buildTypeId)
             }
-            if (stageNumber <= m.stages.size) {
-                val stage = m.stages[stageNumber - 1]
-                val prevStage = if (stageNumber > 1) m.stages[stageNumber - 2] else null
+            if (stageNumber <= buildModel.stages.size) {
+                val stage = buildModel.stages[stageNumber - 1]
+                val prevStage = if (stageNumber > 1) buildModel.stages[stageNumber - 2] else null
                 var functionalTestCount = 0
 
                 if (stage.runsIndependent) {
@@ -79,11 +80,11 @@ class CIConfigIntegrationTests {
                 }
 
                 stage.functionalTests.forEach { testCoverage ->
-                    m.buildTypeBuckets.filter { bucket ->
+                    buildModel.buildTypeBuckets.filter { bucket ->
                         !bucket.shouldBeSkippedInStage(stage) && !bucket.shouldBeSkipped(testCoverage)
                     }.forEach { subprojectBucket ->
                         if (subprojectBucket.hasTestsOf(testCoverage.testType)) {
-                            functionalTestCount += subprojectBucket.createFunctionalTestsFor(m, stage, testCoverage).size
+                            functionalTestCount += subprojectBucket.createFunctionalTestsFor(buildModel, stage, testCoverage).size
                         }
                     }
                     if (testCoverage.testType == TestType.soak) {
@@ -118,7 +119,8 @@ class CIConfigIntegrationTests {
                         TestCoverage(1, TestType.quick, Os.linux, JvmVersion.java8),
                         TestCoverage(2, TestType.quick, Os.windows, JvmVersion.java11, vendor = JvmVendor.openjdk)),
                     omitsSlowProjects = true)
-            )
+            ),
+            subProjectsProvider = JsonGradleSubprojectProvider(File("../.teamcity/subprojects.json"))
         )
         val p = RootProject(m)
         printTree(p)
@@ -129,9 +131,8 @@ class CIConfigIntegrationTests {
 
     @Test
     fun canSplitLargeProjects() {
-        val model = CIBuildModel()
-        val rootProject = RootProject(model)
-        val largeSubprojects = model.buildTypeBuckets.filterIsInstance<SubprojectSplit>()
+        val rootProject = RootProject(buildModel)
+        val largeSubprojects = buildModel.buildTypeBuckets.filterIsInstance<SubprojectSplit>()
 
         fun FunctionalTest.isLargeProjectSplit(): Boolean {
             return largeSubprojects.any { this.name.contains("(${it.subproject.name})") || this.name.contains("(${it.subproject.name}_") }
@@ -190,9 +191,8 @@ class CIConfigIntegrationTests {
 
     @Test
     fun canDeferSlowTestsToLaterStage() {
-        val model = CIBuildModel()
-        val rootProject = RootProject(model)
-        val slowSubprojects = model.subProjects.filter { it.containsSlowTests }.map { it.name }
+        val rootProject = RootProject(buildModel)
+        val slowSubprojects = buildModel.subProjects.filter { it.containsSlowTests }.map { it.name }
 
         fun FunctionalTest.isSlow(): Boolean = slowSubprojects.any { name.contains(it) }
         fun Project.subprojectContainsSlowTests(id: String): Boolean = searchSubproject(id).functionalTests.any(FunctionalTest::isSlow)
@@ -206,8 +206,7 @@ class CIConfigIntegrationTests {
 
     @Test
     fun onlyReadyForNightlyTriggerHasUpdateBranchStatus() {
-        val model = CIBuildModel()
-        val rootProject = RootProject(model)
+        val rootProject = RootProject(buildModel)
         val triggerNameToTasks = rootProject.buildTypes.map { it.uuid to ((it as StagePasses).steps.items[0] as GradleBuildStep).tasks }.toMap()
         val readyForNightlyId = toTriggerId("MasterAccept")
         assertEquals("createBuildReceipt updateBranchStatus", triggerNameToTasks[readyForNightlyId])
@@ -219,7 +218,7 @@ class CIConfigIntegrationTests {
 
     @Test
     fun allSubprojectsAreListed() {
-        val knownSubProjectNames = CIBuildModel().subProjects.map { it.asDirectoryName() }
+        val knownSubProjectNames = buildModel.subProjects.map { it.asDirectoryName() }
         subProjectFolderList().forEach {
             assertTrue(
                 it.name in knownSubProjectNames,
@@ -230,19 +229,14 @@ class CIConfigIntegrationTests {
 
     @Test
     fun uuidsAreUnique() {
-        val uuidList = CIBuildModel().stages.flatMap { it.functionalTests.map { ft -> ft.uuid } }
+        val uuidList = buildModel.stages.flatMap { it.functionalTests.map { ft -> ft.uuid } }
         assertEquals(uuidList.distinct(), uuidList)
     }
 
     @Test
     fun testsAreCorrectlyConfiguredForAllSubProjects() {
-        CIBuildModel().subProjects.filter {
-            !listOf(
-                "soak", // soak test
-                "distributions", // build distributions
-                "docs", // sanity check
-                "architectureTest" // sanity check
-            ).contains(it.name)
+        buildModel.subProjects.filter {
+            !ignoredSubprojects.contains(it.name)
         }.forEach {
             val dir = getSubProjectFolder(it)
             assertEquals(it.unitTests, File(dir, "src/test").isDirectory, "${it.name}'s unitTests is wrong!")
@@ -253,7 +247,7 @@ class CIConfigIntegrationTests {
 
     @Test
     fun allSubprojectsDefineTheirUnitTestPropertyCorrectly() {
-        val projectsWithUnitTests = CIBuildModel().subProjects.filter { it.unitTests }
+        val projectsWithUnitTests = buildModel.subProjects.filter { it.unitTests }
         val projectFoldersWithUnitTests = subProjectFolderList().filter {
             File(it, "src/test").exists() &&
                 it.name != "docs" && // docs:check is part of Sanity Check
@@ -267,7 +261,7 @@ class CIConfigIntegrationTests {
 
     @Test
     fun allSubprojectsDefineTheirFunctionTestPropertyCorrectly() {
-        val projectsWithFunctionalTests = CIBuildModel().subProjects.filter { it.functionalTests }
+        val projectsWithFunctionalTests = buildModel.subProjects.filter { it.functionalTests }
         val projectFoldersWithFunctionalTests = subProjectFolderList().filter {
             File(it, "src/integTest").exists() &&
                 it.name != "distributions" && // distributions:integTest is part of Build Distributions
@@ -281,7 +275,7 @@ class CIConfigIntegrationTests {
 
     @Test
     fun allSubprojectsDefineTheirCrossVersionTestPropertyCorrectly() {
-        val projectsWithCrossVersionTests = CIBuildModel().subProjects.filter { it.crossVersionTests }
+        val projectsWithCrossVersionTests = buildModel.subProjects.filter { it.crossVersionTests }
         val projectFoldersWithCrossVersionTests = subProjectFolderList().filter { File(it, "src/crossVersionTest").exists() }
         assertFalse(projectFoldersWithCrossVersionTests.isEmpty())
         projectFoldersWithCrossVersionTests.forEach {
@@ -301,15 +295,15 @@ class CIConfigIntegrationTests {
     @Test
     fun long_ids_are_shortened() {
         val testCoverage = TestCoverage(1, TestType.quickFeedbackCrossVersion, Os.windows, JvmVersion.java11, JvmVendor.oracle)
-        val shortenedId = testCoverage.asConfigurationId(CIBuildModel(), "veryLongSubprojectNameLongerThanEverythingWeHave")
+        val shortenedId = testCoverage.asConfigurationId(buildModel, "veryLongSubprojectNameLongerThanEverythingWeHave")
         assertTrue(shortenedId.length < 80)
         assertEquals("Gradle_Check_QckFdbckCrssVrsn_1_vryLngSbprjctNmLngrThnEvrythngWHv", shortenedId)
 
-        assertEquals("Gradle_Check_QuickFeedbackCrossVersion_1_iIntegT", testCoverage.asConfigurationId(CIBuildModel(), "internalIntegTesting"))
+        assertEquals("Gradle_Check_QuickFeedbackCrossVersion_1_iIntegT", testCoverage.asConfigurationId(buildModel, "internalIntegTesting"))
 
-        assertEquals("Gradle_Check_QuickFeedbackCrossVersion_1_buildCache", testCoverage.asConfigurationId(CIBuildModel(), "buildCache"))
+        assertEquals("Gradle_Check_QuickFeedbackCrossVersion_1_buildCache", testCoverage.asConfigurationId(buildModel, "buildCache"))
 
-        assertEquals("Gradle_Check_QuickFeedbackCrossVersion_1_0", testCoverage.asConfigurationId(CIBuildModel()))
+        assertEquals("Gradle_Check_QuickFeedbackCrossVersion_1_0", testCoverage.asConfigurationId(buildModel))
     }
 
     @Test
@@ -328,7 +322,8 @@ class CIConfigIntegrationTests {
                     disablesBuildCache = true,
                     functionalTests = listOf(
                         TestCoverage(21, TestType.platform, Os.windows, JvmCategory.MAX_VERSION.version, vendor = JvmCategory.MAX_VERSION.vendor)))
-            )
+            ),
+            subProjectsProvider = JsonGradleSubprojectProvider(File("../.teamcity/subprojects.json"))
         )
         val p = RootProject(m)
         assertTrue(p.subProjects.size == 2)

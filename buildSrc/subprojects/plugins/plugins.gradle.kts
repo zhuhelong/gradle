@@ -33,6 +33,10 @@ gradlePlugin {
             id = "gradlebuild.install"
             implementationClass = "org.gradle.plugins.install.InstallPlugin"
         }
+        register("generateSubprojectsInfo") {
+            id = "gradlebuild.generate-subprojects-info"
+            implementationClass = "org.gradle.build.GenerateSubprojectsInfoPlugin"
+        }
     }
 }
 
