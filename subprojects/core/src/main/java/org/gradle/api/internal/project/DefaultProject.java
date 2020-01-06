@@ -163,6 +163,8 @@ public class DefaultProject extends AbstractPluginAware implements ProjectIntern
 
     private ScriptSource buildScriptSource;
 
+    private boolean unused;
+
     private final File projectDir;
 
     private final File buildFile;
