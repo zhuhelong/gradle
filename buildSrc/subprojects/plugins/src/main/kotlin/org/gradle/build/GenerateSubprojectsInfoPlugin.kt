@@ -23,11 +23,13 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
+
 class GenerateSubprojectsInfoPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         project.tasks.register("generateSubprojectsInfo", GenerateSubprojectsInfoTask::class.java)
     }
 }
+
 
 open class GenerateSubprojectsInfoTask : DefaultTask() {
     @TaskAction
@@ -47,8 +49,11 @@ open class GenerateSubprojectsInfoTask : DefaultTask() {
     }
 }
 
+
 fun File.hasDescendantDir(descendant: String) = resolve(descendant).isDirectory
 
+
 fun String.kebabToCamel() = split("-").map { it.capitalize() }.joinToString("").decapitalize()
+
 
 data class GradleSubproject(val dirName: String, val name: String, val unitTests: Boolean, val functionalTests: Boolean, val crossVersionTests: Boolean)
