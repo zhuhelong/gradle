@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.gradle.api.internal.artifacts;
 
-package org.gradle.workers.internal;
+import org.gradle.api.artifacts.PublishArtifact;
 
-import org.gradle.workers.WorkerSpec;
-import org.gradle.workers.IsolationMode;
-
-public interface WorkerSpecInternal extends WorkerSpec {
-    IsolationMode getIsolationMode();
+public interface PublishArtifactInternal extends PublishArtifact {
+    boolean shouldBePublished();
 }
