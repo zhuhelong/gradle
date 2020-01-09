@@ -39,10 +39,6 @@ dependencies {
     testImplementation(testFixtures(project(":platformNative")))
 
     testRuntimeOnly(project(":runtimeApiInfo"))
-
-    crossVersionTestRuntimeOnly(project(":runtimeApiInfo"))
-    crossVersionTestRuntimeOnly(project(":toolingApiBuilders"))
-    crossVersionTestRuntimeOnly(project(":languageNative"))
 }
 
 gradlebuildJava {
