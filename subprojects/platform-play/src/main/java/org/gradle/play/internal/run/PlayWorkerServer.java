@@ -105,6 +105,9 @@ public class PlayWorkerServer implements Action<WorkerProcessContext>, PlayRunWo
     public void stop() {
         lock.lock();
         try {
+            if (true) {
+                throw new RuntimeException();
+            }
             stopRequested = true;
             events.put(PlayAppLifecycleUpdate.stopped());
         } catch (InterruptedException e) {
