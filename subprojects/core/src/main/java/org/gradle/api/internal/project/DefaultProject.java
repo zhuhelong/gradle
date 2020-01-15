@@ -155,6 +155,8 @@ public class DefaultProject extends AbstractPluginAware implements ProjectIntern
     private final ClassLoaderScope baseClassLoaderScope;
     private final ServiceRegistry services;
 
+    private final String unused = "";
+
     private final ProjectInternal rootProject;
 
     private final GradleInternal gradle;
