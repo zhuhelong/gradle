@@ -481,6 +481,7 @@ class PerformanceTestPlugin : Plugin<Project> {
             configureSampleGenerators {
                 this@apply.mustRunAfter(this)
             }
+            useJUnitPlatform()
         }
     }
 
