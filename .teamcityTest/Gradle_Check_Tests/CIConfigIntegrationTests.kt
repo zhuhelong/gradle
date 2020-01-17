@@ -1,6 +1,8 @@
 import common.JvmCategory
 import Gradle_Check.model.GradleBuildBucketProvider
 import Gradle_Check.model.StatisticBasedGradleBuildBucketProvider
+import com.alibaba.fastjson.JSON
+import com.alibaba.fastjson.serializer.SerializerFeature
 import common.JvmVendor
 import common.JvmVersion
 import common.NoBuildCache
@@ -32,6 +34,7 @@ class CIConfigIntegrationTests {
     private val rootProject = RootProject(model, gradleBuildBucketProvider)
     @Test
     fun configurationTreeCanBeGenerated() {
+//        File("result.json").writeText(JSON.toJSONString(gradleBuildBucketProvider.debug(), SerializerFeature.PrettyFormat))
         assertEquals(rootProject.subProjects.size, model.stages.size + 1)
         assertEquals(rootProject.buildTypes.size, model.stages.size)
     }
@@ -94,7 +97,7 @@ class CIConfigIntegrationTests {
 
     class SubProjectBucketProvider(private val model: CIBuildModel) : GradleBuildBucketProvider {
         override fun createFunctionalTestsFor(stage: Stage, testConfig: TestCoverage) =
-            model.subprojects.subprojects.map { it.createFunctionalTestsFor(model, stage, testConfig) }
+            model.subprojects.subprojects.map { it.createFunctionalTestsFor(model, stage, testConfig, Int.MAX_VALUE) }
 
         override fun createDeferredFunctionalTestsFor(stage: Stage) = emptyList<FunctionalTest>()
     }

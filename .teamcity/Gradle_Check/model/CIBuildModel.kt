@@ -15,6 +15,7 @@ import configurations.Gradleception
 import configurations.SanityCheck
 import configurations.SmokeTests
 import jetbrains.buildServer.configs.kotlin.v2018_2.BuildType
+import java.lang.UnsupportedOperationException
 
 enum class StageNames(override val stageName: String, override val description: String, override val uuid: String) : StageName {
     QUICK_FEEDBACK_LINUX_ONLY("Quick Feedback - Linux Only", "Run checks and functional tests (embedded executer, Linux)", "QuickFeedbackLinuxOnly"),
@@ -238,19 +239,32 @@ data class CIBuildModel(
 )
 
 interface BuildTypeBucket {
-    fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage): FunctionalTest
+    fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage, bucketIndex: Int): FunctionalTest
+
+    fun getUuid(model: CIBuildModel, testCoverage: TestCoverage, bucketIndex: Int): String = testCoverage.asConfigurationId(model, "bucket${bucketIndex + 1}")
+
+    fun getName(testCoverage: TestCoverage): String = throw UnsupportedOperationException()
+
+    fun getDescription(testCoverage: TestCoverage): String = throw UnsupportedOperationException()
 }
 
+
 data class GradleSubproject(val name: String, val unitTests: Boolean = true, val functionalTests: Boolean = true, val crossVersionTests: Boolean = false, val containsSlowTests: Boolean = false) : BuildTypeBucket {
-    override fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage) =
-        FunctionalTest(model,
-            testCoverage.asConfigurationId(model, name),
-            "${testCoverage.asName()} ($name)",
-            "${testCoverage.asName()} for $name",
+    override fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage, bucketIndex: Int): FunctionalTest {
+        val uuid = if (containsSlowTests) testCoverage.asConfigurationId(model, name) else getUuid(model, testCoverage, bucketIndex)
+        return FunctionalTest(model,
+            uuid,
+            getName(testCoverage),
+            getDescription(testCoverage),
             testCoverage,
             stage,
             listOf(name)
         )
+    }
+
+    override fun getName(testCoverage: TestCoverage): String = "${testCoverage.asName()} ($name)"
+
+    override fun getDescription(testCoverage: TestCoverage) = "${testCoverage.asName()} for $name"
 
     fun hasTestsOf(testType: TestType) = (unitTests && testType.unitTests) || (functionalTests && testType.functionalTests) || (crossVersionTests && testType.crossVersionTests)
 

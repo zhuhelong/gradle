@@ -15,8 +15,11 @@ import model.Stage
 import model.TestCoverage
 import model.TestType
 import java.io.File
+import java.util.*
 
-const val BUCKET_NUMBER = 40
+const val BUCKET_NUMBER_PER_BUILD_TYPE = 50
+
+const val MAX_PROJECT_NUMBER_IN_BUCKET = 10
 
 typealias BuildProjectToSubprojectTestClassTimes = Map<String, Map<String, List<TestClassTime>>>
 
@@ -30,7 +33,9 @@ class StatisticBasedGradleBuildBucketProvider(private val model: CIBuildModel, t
     private val buckets: Map<TestCoverage, List<BuildTypeBucket>> = buildBuckets(testTimeDataJson, model)
 
     override fun createFunctionalTestsFor(stage: Stage, testCoverage: TestCoverage): List<FunctionalTest> {
-        return buckets.getValue(testCoverage).map { it.createFunctionalTestsFor(model, stage, testCoverage) }
+        return buckets.getValue(testCoverage).mapIndexed { bucketIndex: Int, bucket: BuildTypeBucket ->
+            bucket.createFunctionalTestsFor(model, stage, testCoverage, bucketIndex)
+        }
     }
 
     override fun createDeferredFunctionalTestsFor(stage: Stage): List<FunctionalTest> {
@@ -44,7 +49,7 @@ class StatisticBasedGradleBuildBucketProvider(private val model: CIBuildModel, t
             val deferredTests = mutableListOf<FunctionalTest>()
             stages.forEach { eachStage ->
                 eachStage.functionalTests.forEach { testConfig ->
-                    deferredTests.addAll(model.subprojects.getSlowSubprojects().map { it.createFunctionalTestsFor(model, eachStage, testConfig) })
+                    deferredTests.addAll(model.subprojects.getSlowSubprojects().map { it.createFunctionalTestsFor(model, eachStage, testConfig, -1) })
                 }
             }
             deferredTests
@@ -95,67 +100,61 @@ class StatisticBasedGradleBuildBucketProvider(private val model: CIBuildModel, t
             .filter { "UNKNOWN" != it.key }
             .filter { model.subprojects.getSubprojectByName(it.key) != null }
             .map { SubprojectTestClassTime(model.subprojects.getSubprojectByName(it.key)!!, it.value.filter { it.sourceSet != "test" }) }
-        val expectedBucketSize: Int = subProjectTestClassTimes.sumBy { it.totalTime } / BUCKET_NUMBER
+            .sortedBy { -it.totalTime }
 
-        return split(subProjectTestClassTimes, expectedBucketSize)
+        return split(
+            LinkedList(subProjectTestClassTimes),
+            SubprojectTestClassTime::totalTime,
+            { largeElement: SubprojectTestClassTime, size: Int -> largeElement.split(size) },
+            { list: List<SubprojectTestClassTime> -> SmallSubprojectBucket(list) },
+            BUCKET_NUMBER_PER_BUILD_TYPE,
+            MAX_PROJECT_NUMBER_IN_BUCKET
+        )
     }
 
-    private
-    fun split(subprojects: List<SubprojectTestClassTime>, expectedBucketSize: Int): List<BuildTypeBucket> {
-        val buckets: List<List<SubprojectTestClassTime>> = split(subprojects, SubprojectTestClassTime::totalTime, expectedBucketSize, 5)
-        val ret = mutableListOf<BuildTypeBucket>()
-        var bucketNumber = 1
-        buckets.forEach { subprojectsInBucket ->
-            if (subprojectsInBucket.size == 1) {
-                // Split large project to potential multiple buckets
-                ret.addAll(subprojectsInBucket[0].split(expectedBucketSize))
-            } else {
-                ret.add(SmallSubprojectBucket("bucket${bucketNumber++}", subprojectsInBucket.map { it.subProject }))
-            }
-        }
-        return ret
-    }
 }
 
 /**
- * Split a list of object into buckets with expected size.
+ * Split a list of elements into nearly even sublist. If an element is too large, largeElementSplitFunction will be used to split the large element into several smaller pieces;
+ * if some elements are too small, they will be aggregated by smallElementAggregateFunction.
  *
- * For example, we have a list of number [9, 1, 2, 10, 4, 5] and the expected size is 5,
- * the result buckets will be [[10], [9], [5], [4, 1], [2]]
+ * @param list the list to split, must be ordered by size desc
+ * @param toIntFunction the function used to map the element to its "size"
+ * @param largeElementSplitFunction the function used to further split the large element into smaller pieces
+ * @param smallElementAggregateFunction the function used to aggregate tiny elements into a large bucket
+ * @param expectedBucketNumber the return value's size should be expectedBucketNumber
  */
-fun <T> split(list: List<T>, function: (T) -> Int, expectedBucketSize: Int, maxItemNumberInBucket: Int): List<List<T>> {
-    val sortedList = ArrayList(list.sortedBy { -function(it) })
-    val ret = mutableListOf<List<T>>()
-
-    while (sortedList.isNotEmpty()) {
-        val largest = sortedList.removeAt(0)
-        val bucket = mutableListOf<T>()
-        var restCapacity = expectedBucketSize - function(largest)
-
-        bucket.add(largest)
-
-        while (true) {
-            // Find next largest object which can fit in resetCapacity
-            val index = sortedList.indexOfFirst { function(it) < restCapacity }
-            if (index == -1 || sortedList.isEmpty() || bucket.size >= maxItemNumberInBucket) {
-                // TeamCity has length constraint, don't make a bucket containing too many subprojects.
-                break
-            }
-
-            val nextElementToAddToBucket = sortedList.removeAt(index)
-            restCapacity -= function(nextElementToAddToBucket)
-            bucket.add(nextElementToAddToBucket)
-        }
-
-        ret.add(bucket)
+fun <T, R> split(list: LinkedList<T>, toIntFunction: (T) -> Int, largeElementSplitFunction: (T, Int) -> List<R>, smallElementAggregateFunction: (List<T>) -> R, expectedBucketNumber: Int, maxNumberInBucket: Int): List<R> {
+    if (expectedBucketNumber == 1) {
+        return listOf(smallElementAggregateFunction(list))
     }
-    return ret
+
+    val expectedBucketSize = list.sumBy(toIntFunction) / expectedBucketNumber
+
+    val largestElement = list.removeFirst()!!
+
+    val largestElementSize = toIntFunction(largestElement)
+
+    return if (largestElementSize >= expectedBucketSize) {
+        val bucketsOfFirstElement = largeElementSplitFunction(largestElement, if (largestElementSize % expectedBucketSize == 0) largestElementSize / expectedBucketSize else largestElementSize / expectedBucketSize + 1)
+        val bucketsOfRestElements = split(list, toIntFunction, largeElementSplitFunction, smallElementAggregateFunction, expectedBucketNumber - bucketsOfFirstElement.size, maxNumberInBucket)
+        bucketsOfFirstElement + bucketsOfRestElements
+    } else {
+        val buckets = arrayListOf(largestElement)
+        var restCapacity = expectedBucketSize - toIntFunction(largestElement)
+        while (restCapacity > 0 && list.isNotEmpty() && buckets.size < maxNumberInBucket) {
+            val smallestElement = list.removeLast()
+            buckets.add(smallestElement)
+            restCapacity -= toIntFunction(smallestElement)
+        }
+        listOf(smallElementAggregateFunction(buckets)) + split(list, toIntFunction, largeElementSplitFunction, smallElementAggregateFunction, expectedBucketNumber - 1, maxNumberInBucket)
+    }
 }
 
 enum class AllSubprojectsIntegMultiVersionTest : BuildTypeBucket {
     INSTANCE;
 
-    override fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage) =
+    override fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage, bucketIndex: Int) =
         FunctionalTest(model,
             testCoverage.asConfigurationId(model, "all"),
             testCoverage.asName(),
@@ -167,7 +166,7 @@ enum class AllSubprojectsIntegMultiVersionTest : BuildTypeBucket {
 }
 
 class GradleVersionXCrossVersionTestBucket(private val gradleMajorVersion: Int) : BuildTypeBucket {
-    override fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage) =
+    override fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage, bucketIndex: Int) =
         FunctionalTest(model,
             testCoverage.asConfigurationId(model, "gradle$gradleMajorVersion"),
             "${testCoverage.asName()} (gradle $gradleMajorVersion)",
@@ -179,14 +178,17 @@ class GradleVersionXCrossVersionTestBucket(private val gradleMajorVersion: Int) 
         )
 }
 
-class LargeSubprojectSplitBucket(private val subProject: GradleSubproject, private val number: Int, private val include: Boolean, private val classes: List<TestClassTime>) : BuildTypeBucket by subProject {
-    val name = if (number == 1) subProject.name else "${subProject.name}_$number"
+class LargeSubprojectSplitBucket(val subProject: GradleSubproject, val number: Int, val include: Boolean, val classes: List<TestClassTime>) : BuildTypeBucket by subProject {
+    val name = "${subProject.name}_$number"
+    val totalTime = classes.sumBy { it.buildTimeMs }
 
-    override fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage): FunctionalTest =
+    override fun getName(testCoverage: TestCoverage) = "${testCoverage.asName()} ($name)"
+
+    override fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage, bucketIndex: Int): FunctionalTest =
         FunctionalTest(model,
-            testCoverage.asConfigurationId(model, name),
-            "${testCoverage.asName()} ($name)",
-            "${testCoverage.asName()} for projects $name",
+            getUuid(model, testCoverage, bucketIndex),
+            getName(testCoverage),
+            getDescription(testCoverage),
             testCoverage,
             stage,
             subprojects = listOf(subProject.name),
@@ -232,15 +234,23 @@ type build\$action-test-classes.properties
     }
 }
 
-class SmallSubprojectBucket(val name: String, private val subprojects: List<GradleSubproject>) : BuildTypeBucket {
-    override fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage): FunctionalTest =
-        FunctionalTest(model, testCoverage.asConfigurationId(model, name),
-            "${testCoverage.asName()} (${subprojects.joinToString(", ") { it.name }})",
-            "${testCoverage.asName()} for ${subprojects.joinToString(", ") { it.name }}",
+class SmallSubprojectBucket(val subprojectsBuildTime: List<SubprojectTestClassTime>) : BuildTypeBucket {
+    val subprojects = subprojectsBuildTime.map { it.subProject }
+    val name = subprojects.joinToString(",") { it.name }
+    val totalTime = subprojectsBuildTime.sumBy { it.totalTime }
+    override fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage, bucketIndex: Int): FunctionalTest =
+        FunctionalTest(model,
+            getUuid(model, testCoverage, bucketIndex),
+            getName(testCoverage),
+            getDescription(testCoverage),
             testCoverage,
             stage,
             subprojects.map { it.name }
         )
+
+    override fun getName(testCoverage: TestCoverage) = "${testCoverage.asName()} (${subprojects.joinToString(",") { it.name }})"
+
+    override fun getDescription(testCoverage: TestCoverage) = "${testCoverage.asName()} for ${subprojects.joinToString(", ") { it.name }}"
 }
 
 class TestClassTime(var testClass: String, val sourceSet: String, var buildTimeMs: Int) {
@@ -256,20 +266,30 @@ class TestClassTime(var testClass: String, val sourceSet: String, var buildTimeM
 class SubprojectTestClassTime(val subProject: GradleSubproject, private val testClassTimes: List<TestClassTime>) {
     val totalTime: Int = testClassTimes.sumBy { it.buildTimeMs }
 
-    fun split(expectedBuildTimePerBucket: Int): List<BuildTypeBucket> {
-        return if (totalTime < 1.1 * expectedBuildTimePerBucket) {
+
+    fun split(expectedBucketNumber: Int): List<BuildTypeBucket> {
+        return if (expectedBucketNumber == 1) {
             listOf(subProject)
         } else {
-            val buckets: List<List<TestClassTime>> = split(testClassTimes, TestClassTime::buildTimeMs, expectedBuildTimePerBucket, Integer.MAX_VALUE)
-            return if (buckets.size == 1) {
-                listOf(subProject)
-            } else {
-                buckets.mapIndexed { index: Int, classesInBucket: List<TestClassTime> ->
-                    val include = index != buckets.size - 1
-                    val classes = if (include) classesInBucket else buckets.subList(0, buckets.size - 1).flatten()
-                    LargeSubprojectSplitBucket(subProject, index + 1, include, classes)
-                }
+            // fun <T, R> split(list: LinkedList<T>, toIntFunction: (T) -> Int, largeElementSplitFunction: (T, Int) -> List<R>, smallElementAggregateFunction: (List<T>) -> R, expectedBucketNumber: Int, maxNumberInBucket: Int): List<R> {
+            // T TestClassTime
+            // R List<TestClassTime>
+            val list = LinkedList(testClassTimes.sortedBy { -it.buildTimeMs })
+            val toIntFunction = TestClassTime::buildTimeMs
+            val largeElementSplitFunction: (TestClassTime, Int) -> List<List<TestClassTime>> = { testClassTime: TestClassTime, number: Int -> listOf(listOf(testClassTime)) }
+            val smallElementAggregateFunction: (List<TestClassTime>) -> List<TestClassTime> = { it }
+
+            val buckets: List<List<TestClassTime>> = split(list, toIntFunction, largeElementSplitFunction, smallElementAggregateFunction, expectedBucketNumber, Integer.MAX_VALUE)
+
+            buckets.mapIndexed { index: Int, classesInBucket: List<TestClassTime> ->
+                val include = index != buckets.size - 1
+                val classes = if (include) classesInBucket else buckets.subList(0, buckets.size - 1).flatten()
+                LargeSubprojectSplitBucket(subProject, index + 1, include, classes)
             }
         }
+    }
+
+    override fun toString(): String {
+        return "SubprojectTestClassTime(subProject=${subProject.name}, totalTime=$totalTime)"
     }
 }
