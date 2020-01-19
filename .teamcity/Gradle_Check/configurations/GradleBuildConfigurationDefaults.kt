@@ -115,7 +115,7 @@ fun BaseGradleBuildType.gradleRerunnerStep(model: CIBuildModel, gradleTasks: Str
     val cleanedExtraParameters = extraParameters
         .replace("-PincludeTestClasses=true", "")
         .replace("-PexcludeTestClasses=true", "")
-        .replace("-PonlyTestGradleMajorVersion=\\d+".toRegex(), "")
+        .replace("-PonlyTestGradleVersion=[\\d.-]+".toRegex(), "")
 
     steps {
         gradleWrapper {

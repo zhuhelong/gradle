@@ -21,6 +21,23 @@ const val BUCKET_NUMBER_PER_BUILD_TYPE = 50
 
 const val MAX_PROJECT_NUMBER_IN_BUCKET = 10
 
+// 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 1.11, 1.12
+// 2.0, 2.1, 2.2.1, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13, 2.14.1,
+// 3.0, 3.1, 3.2.1, 3.3, 3.4.1, 3.5.1,
+// 4.0.2, 4.1, 4.2.1, 4.3.1, 4.4.1, 4.5.1, 4.6, 4.7, 4.8.1, 4.9, 4.10.3,
+// 5.0, 5.1.1, 5.2.1, 5.3.1, 5.4.1, 5.5.1, 5.6.4,
+// 6.0.1, 6.1
+
+val CROSS_VERSION_BUCKETS = listOf(
+    listOf("0.0", "3.0"), // 0.0 <= version < 3.0
+    listOf("3.0", "4.0"), // 3.0 <= version < 4.0
+    listOf("4.0", "4.5"), // 4.0 <=version < 4.5
+    listOf("4.5", "5.0"), // 4.5 <=version < 5.0
+    listOf("5.0", "5.4"), // 5.0 <=version < 5.4
+    listOf("5.4", "6.0"), // 5.4 <=version < 6.0
+    listOf("6.0", "99.0") // 6.0 <=version < 99.0
+)
+
 typealias BuildProjectToSubprojectTestClassTimes = Map<String, Map<String, List<TestClassTime>>>
 
 interface GradleBuildBucketProvider {
@@ -73,7 +90,7 @@ class StatisticBasedGradleBuildBucketProvider(private val model: CIBuildModel, t
                         result[testCoverage] = listOf(AllSubprojectsIntegMultiVersionTest.INSTANCE)
                     }
                     in listOf(TestType.allVersionsCrossVersion, TestType.quickFeedbackCrossVersion) -> {
-                        result[testCoverage] = splitBucketsByGradleVersionForBuildProject(6)
+                        result[testCoverage] = splitBucketsByGradleVersionForBuildProject()
                     }
                     else -> {
                         result[testCoverage] = splitBucketsByTestClassesForBuildProject(testCoverage, stage, buildProjectClassTimes)
@@ -85,8 +102,8 @@ class StatisticBasedGradleBuildBucketProvider(private val model: CIBuildModel, t
     }
 
     // For quickFeedbackCrossVersion and allVersionsCrossVersion, the buckets are split by Gradle version
-    // By default, split them into [gradle1, gradle2, gradle3, gradle4, gradle5, gradle6]
-    private fun splitBucketsByGradleVersionForBuildProject(maxGradleMajorVersion: Int) = (1..maxGradleMajorVersion).map { GradleVersionXCrossVersionTestBucket(it) }
+    // By default, split them by CROSS_VERSION_BUCKETS
+    private fun splitBucketsByGradleVersionForBuildProject() = CROSS_VERSION_BUCKETS.mapIndexed { bucketIndex: Int, bucket: List<String> -> GradleVersionRangeCrossVersionTestBucket(bucketIndex, bucket[0], bucket[1]) }
 
     private
     fun splitBucketsByTestClassesForBuildProject(testCoverage: TestCoverage, stage: Stage, buildProjectClassTimes: BuildProjectToSubprojectTestClassTimes): List<BuildTypeBucket> {
@@ -164,16 +181,16 @@ enum class AllSubprojectsIntegMultiVersionTest : BuildTypeBucket {
         )
 }
 
-class GradleVersionXCrossVersionTestBucket(private val gradleMajorVersion: Int) : BuildTypeBucket {
+class GradleVersionRangeCrossVersionTestBucket(private val bucketIndex: Int, private val startInclusive: String, private val endExclusive: String) : BuildTypeBucket {
     override fun createFunctionalTestsFor(model: CIBuildModel, stage: Stage, testCoverage: TestCoverage, bucketIndex: Int) =
         FunctionalTest(model,
-            testCoverage.asConfigurationId(model, "gradle$gradleMajorVersion"),
-            "${testCoverage.asName()} (gradle $gradleMajorVersion)",
-            "${testCoverage.asName()} for gradle $gradleMajorVersion",
+            testCoverage.asConfigurationId(model, "gradleCrossVersionTestBucket${bucketIndex + 1}"),
+            "${testCoverage.asName()} ($startInclusive <= gradle <$endExclusive)",
+            "${testCoverage.asName()} for gradle ($startInclusive <= gradle <$endExclusive)",
             testCoverage,
             stage,
             emptyList(),
-            "-PonlyTestGradleMajorVersion=$gradleMajorVersion"
+            "-PonlyTestGradleVersion=$startInclusive-$endExclusive"
         )
 }
 

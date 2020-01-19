@@ -38,8 +38,8 @@ fun Project.bucketProvider(): BuildBucketProvider {
                 println("Tests to be excluded:\n$content")
                 ExcludeTestClassProvider(readTestClasses(content))
             }
-            project.stringPropertyOrEmpty("onlyTestGradleMajorVersion").isNotBlank() -> {
-                CrossVersionBucketProvider(project.stringPropertyOrEmpty("onlyTestGradleMajorVersion"))
+            project.stringPropertyOrEmpty("onlyTestGradleVersion").isNotBlank() -> {
+                CrossVersionBucketProvider(project.stringPropertyOrEmpty("onlyTestGradleVersion"))
             }
             else -> {
                 NoOpTestClassProvider()
@@ -69,7 +69,11 @@ interface BuildBucketProvider {
 }
 
 
-class CrossVersionBucketProvider(private val onlyTestGradleMajorVersion: String) : BuildBucketProvider {
+// -PonlyTestGradleVersion=4.0-5.0
+// 4.0 <= gradle < 5.0
+class CrossVersionBucketProvider(private val onlyTestGradleVersion: String) : BuildBucketProvider {
+    private val startVersionInclusive = onlyTestGradleVersion.substringBefore("-")
+    private val endVersionExclusive = onlyTestGradleVersion.substringAfter("-")
     override fun configureTest(testTask: Test, sourceSet: SourceSet, testType: TestType) {
         val currentVersionUnderTest = extractTestTaskGradleVersion(testTask.name)
         currentVersionUnderTest?.apply {
@@ -80,10 +84,8 @@ class CrossVersionBucketProvider(private val onlyTestGradleMajorVersion: String)
     private
     fun currentVersionEnabled(currentVersionUnderTest: String): Boolean {
         val versionUnderTest = GradleVersion.version(currentVersionUnderTest)
-        // if onlyTestGradleMajorVersion=1, we test Gradle 0.x and Gradle 1.x
-        val majorVersion = GradleVersion.version("${if (onlyTestGradleMajorVersion == "1") "0" else onlyTestGradleMajorVersion}.0")
-        val nextMajorVersion = GradleVersion.version("${onlyTestGradleMajorVersion.toInt() + 1}.0")
-        return majorVersion <= versionUnderTest && versionUnderTest < nextMajorVersion
+        return GradleVersion.version(startVersionInclusive) <= versionUnderTest
+            && versionUnderTest < GradleVersion.version(endVersionExclusive)
     }
 
     private

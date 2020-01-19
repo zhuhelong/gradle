@@ -1,3 +1,4 @@
+import Gradle_Check.model.CROSS_VERSION_BUCKETS
 import Gradle_Check.model.GradleBuildBucketProvider
 import Gradle_Check.model.StatisticBasedGradleBuildBucketProvider
 import common.JvmCategory
@@ -179,10 +180,10 @@ class CIConfigIntegrationTests {
         }
 
         fun assertProjectAreSplitByGradleVersionCorrectly(testType: TestType, functionalTests: List<FunctionalTest>) {
-            (1..6).forEach {
-                assertTrue(functionalTests[it - 1].name.contains("gradle $it"))
-                assertEquals("clean ${testType}Test", functionalTests[it - 1].getGradleTasks())
-                assertTrue(functionalTests[it - 1].getGradleParams().contains("-PonlyTestGradleMajorVersion=$it"))
+            CROSS_VERSION_BUCKETS.forEachIndexed { index: Int, startEndVersion: List<String> ->
+                assertTrue(functionalTests[index].name.contains("(${startEndVersion[0]} <= gradle <${startEndVersion[1]})"))
+                assertEquals("clean ${testType}Test", functionalTests[index].getGradleTasks())
+                assertTrue(functionalTests[index].getGradleParams().contains("-PonlyTestGradleVersion=${startEndVersion[0]}-${startEndVersion[1]}"))
             }
         }
 
@@ -362,6 +363,16 @@ class CIConfigIntegrationTests {
             .subProjects[0].buildTypes.map { ((it as FunctionalTest).steps.items[0] as GradleBuildStep) }
         buildStepsWithoutCache.forEach {
             assertFalse(it.gradleParams!!.contains("--build-cache"))
+        }
+    }
+
+    @Test
+    fun allVersionsAreIncludedInCrossVersionTests() {
+        assertEquals("0.0", CROSS_VERSION_BUCKETS[0][0])
+        assertEquals("99.0", CROSS_VERSION_BUCKETS[CROSS_VERSION_BUCKETS.size - 1][1])
+
+        (1 until CROSS_VERSION_BUCKETS.size).forEach {
+            assertEquals(CROSS_VERSION_BUCKETS[it - 1][1], CROSS_VERSION_BUCKETS[it][0])
         }
     }
 
