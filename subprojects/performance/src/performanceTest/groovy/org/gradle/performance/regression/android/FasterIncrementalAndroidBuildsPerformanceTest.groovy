@@ -18,13 +18,16 @@ package org.gradle.performance.regression.android
 
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
+import org.gradle.internal.scan.config.fixtures.GradleEnterprisePluginSettingsFixture
 import org.gradle.internal.service.scopes.VirtualFileSystemServices
 import org.gradle.performance.AbstractCrossBuildPerformanceTest
 import org.gradle.performance.categories.PerformanceExperiment
 import org.gradle.performance.fixture.BuildExperimentSpec
 import org.gradle.performance.fixture.GradleBuildExperimentSpec
 import org.gradle.performance.regression.java.JavaInstantExecutionPerformanceTest
+import org.gradle.profiler.BuildMutator
 import org.gradle.profiler.InvocationSettings
+import org.gradle.profiler.ScenarioContext
 import org.gradle.profiler.mutations.AbstractCleanupMutator
 import org.gradle.profiler.mutations.ClearInstantExecutionStateMutator
 import org.gradle.profiler.mutations.ClearProjectCacheMutator
@@ -111,6 +114,7 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
             builder.invocation.args('-Dcom.android.build.gradle.overrideVersionCheck=true')
             builder.invocation.args("-Dorg.gradle.workers.max=8", "--no-build-cache", "--no-scan")
             builder.invocation.useToolingApi()
+            applyEnterprisePlugin()
             builder.addBuildMutator { InvocationSettings invocationSettings ->
                 new ClearInstantExecutionStateMutator(invocationSettings.projectDir, AbstractCleanupMutator.CleanupSchedule.SCENARIO)
             }
@@ -133,5 +137,25 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
         }
 
         final String argument
+    }
+
+    void applyEnterprisePlugin() {
+        runner.addBuildMutator { invocationSettings ->
+            new BuildMutator() {
+                String originalSettingsFileText
+                final File settingsFile = new File(invocationSettings.projectDir, "settings.gradle")
+
+                @Override
+                void beforeScenario(ScenarioContext context) {
+                    originalSettingsFileText = settingsFile.text
+                    GradleEnterprisePluginSettingsFixture.applyEnterprisePlugin(settingsFile)
+                }
+
+                @Override
+                void afterScenario(ScenarioContext context) {
+                    settingsFile.text = originalSettingsFileText
+                }
+            }
+        }
     }
 }
