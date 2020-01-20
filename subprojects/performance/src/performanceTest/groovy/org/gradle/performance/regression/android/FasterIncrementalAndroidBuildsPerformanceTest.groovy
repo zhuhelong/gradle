@@ -148,12 +148,14 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
 
                 @Override
                 void beforeScenario(ScenarioContext context) {
+                    println("Adding Gradle enterprise plugin to settings file")
                     originalSettingsFileText = settingsFile.text
                     GradleEnterprisePluginSettingsFixture.applyEnterprisePlugin(settingsFile)
                 }
 
                 @Override
                 void afterScenario(ScenarioContext context) {
+                    println("Removing Gradle Enterprise plugin from settings file")
                     settingsFile.text = originalSettingsFileText
                 }
             }
