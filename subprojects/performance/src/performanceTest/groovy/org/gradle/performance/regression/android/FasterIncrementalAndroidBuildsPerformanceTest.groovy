@@ -112,7 +112,7 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
     protected void defaultSpec(BuildExperimentSpec.Builder builder) {
         if (builder instanceof GradleBuildExperimentSpec.GradleBuilder) {
             builder.invocation.args('-Dcom.android.build.gradle.overrideVersionCheck=true')
-            builder.invocation.args("-Dorg.gradle.workers.max=8", "--no-build-cache", "--no-scan")
+            builder.invocation.args("-Dorg.gradle.workers.max=8", "--no-build-cache", "--no-scan", "--parallel")
             builder.invocation.useToolingApi()
             builder.invocationCount(100)
             applyEnterprisePlugin(builder)
