@@ -88,7 +88,7 @@ public class GradleProfilerBuildExperimentRunner extends AbstractBuildExperiment
         GradleInvocationSpec invocation = (GradleInvocationSpec) invocationSpec;
         List<String> additionalJvmOpts = new ArrayList<>();
         List<String> additionalArgs = new ArrayList<>();
-        additionalArgs.add("-PbuildExperimentDisplayName=" + experiment.getDisplayName());
+        additionalArgs.add("-PbuildExperimentDisplayName=" + experiment.getDisplayName().substring(0, 3));
 
         GradleInvocationSpec buildSpec = invocation.withAdditionalJvmOpts(additionalJvmOpts).withAdditionalArgs(additionalArgs);
 
@@ -167,8 +167,8 @@ public class GradleProfilerBuildExperimentRunner extends AbstractBuildExperiment
         GradleDistribution gradleDistribution = invocationSpec.getGradleDistribution();
         List<String> cleanTasks = invocationSpec.getCleanTasks();
         return new GradleScenarioDefinition(
-            experimentSpec.getDisplayName(),
-            experimentSpec.getDisplayName(),
+            experimentSpec.getDisplayName().substring(0, 3),
+            experimentSpec.getDisplayName().substring(0, 3),
             (GradleBuildInvoker) invocationSettings.getInvoker(),
             new GradleBuildConfiguration(gradleDistribution.getVersion(), gradleDistribution.getGradleHomeDir(), Jvm.current().getJavaHome(), invocationSpec.getJvmOpts(), false),
             new RunTasksAction(invocationSettings.getTargets()),
