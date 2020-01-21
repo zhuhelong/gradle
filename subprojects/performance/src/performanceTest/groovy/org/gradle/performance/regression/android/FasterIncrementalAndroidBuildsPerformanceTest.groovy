@@ -115,6 +115,7 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
             builder.invocation.args("-Dorg.gradle.workers.max=8", "--no-build-cache", "--no-scan", "--parallel")
             builder.invocation.useToolingApi()
             builder.invocationCount(100)
+            builder.invocation.gradleOpts("-Dfile.encoding=UTF-8", "-Duser.country=US", "-Duser.language=en", "-Duser.variant")
             applyEnterprisePlugin(builder)
             builder.addBuildMutator { InvocationSettings invocationSettings ->
                 new ClearInstantExecutionStateMutator(invocationSettings.projectDir, AbstractCleanupMutator.CleanupSchedule.SCENARIO)
