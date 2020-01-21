@@ -115,7 +115,7 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
             builder.invocation.args("-Dorg.gradle.workers.max=8", "--no-build-cache", "--no-scan")
             builder.invocation.useToolingApi()
             builder.invocationCount(100)
-            applyEnterprisePlugin()
+            applyEnterprisePlugin(builder)
             builder.addBuildMutator { InvocationSettings invocationSettings ->
                 new ClearInstantExecutionStateMutator(invocationSettings.projectDir, AbstractCleanupMutator.CleanupSchedule.SCENARIO)
             }
@@ -140,8 +140,8 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
         final String argument
     }
 
-    void applyEnterprisePlugin() {
-        runner.addBuildMutator { invocationSettings ->
+    void applyEnterprisePlugin(GradleBuildExperimentSpec.GradleBuilder builder) {
+        builder.addBuildMutator { invocationSettings ->
             new BuildMutator() {
                 String originalSettingsFileText
                 final File settingsFile = new File(invocationSettings.projectDir, "settings.gradle")
