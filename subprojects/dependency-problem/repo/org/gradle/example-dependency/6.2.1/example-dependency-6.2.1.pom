@@ -8,6 +8,6 @@
   <!-- do_not_remove: published-with-gradle-metadata -->
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.gradle</groupId>
-  <artifactId>dependencyProblem</artifactId>
+  <artifactId>example-dependency</artifactId>
   <version>6.2.1</version>
 </project>

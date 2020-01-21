@@ -2,8 +2,8 @@
   "formatVersion": "1.1",
   "component": {
     "group": "org.gradle",
-    "module": "dependencyProblem",
-    "version": "6.2.1",
+    "module": "example-dependency",
+    "version": "6.2.2",
     "attributes": {
       "org.gradle.status": "release"
     }
@@ -11,7 +11,7 @@
   "createdBy": {
     "gradle": {
       "version": "6.2-20191225230022+0000",
-      "buildId": "mgz7esrz7vg2zgon2bwo3fvebm"
+      "buildId": "3ssopi2x3bcfdduqgahtpd5clu"
     }
   },
   "variants": [
@@ -27,8 +27,8 @@
       },
       "files": [
         {
-          "name": "dependencyProblem-6.2.1.jar",
-          "url": "dependencyProblem-6.2.1.jar",
+          "name": "example-dependency-6.2.2.jar",
+          "url": "example-dependency-6.2.2.jar",
           "size": 973,
           "sha512": "300511d678a1a42d50485b74d8eb728393be7ab18562cb1876c4df0b9882449409668e14c8188bce4c74612e97f06b6b05624faeb418af25fc62de7d6e9a5f8e",
           "sha256": "42efd1edbcdb7d01bb30f39541a8b245ed6ce23f1eda17bbfebd1c77be554066",
@@ -47,19 +47,11 @@
         "org.gradle.libraryelements": "jar",
         "org.gradle.usage": "java-runtime"
       },
-      "dependencies": [
-        {
-          "group": "org.gradle",
-          "module": "dependencyProblem",
-          "version": {
-            "requires": "6.2+"
-          }
-        }
-      ],
+      "dependencies": [],
       "files": [
         {
-          "name": "dependencyProblem-6.2.1.jar",
-          "url": "dependencyProblem-6.2.1.jar",
+          "name": "example-dependency-6.2.2.jar",
+          "url": "example-dependency-6.2.2.jar",
           "size": 973,
           "sha512": "300511d678a1a42d50485b74d8eb728393be7ab18562cb1876c4df0b9882449409668e14c8188bce4c74612e97f06b6b05624faeb418af25fc62de7d6e9a5f8e",
           "sha256": "42efd1edbcdb7d01bb30f39541a8b245ed6ce23f1eda17bbfebd1c77be554066",
@@ -78,8 +70,8 @@
       },
       "files": [
         {
-          "name": "dependencyProblem-6.2.1-sources.jar",
-          "url": "dependencyProblem-6.2.1-sources.jar",
+          "name": "example-dependency-6.2.2-sources.jar",
+          "url": "example-dependency-6.2.2-sources.jar",
           "size": 781,
           "sha512": "86be0450bf02393366a99cea33eef2b56413902216016a7a6e5777bf7ced90f0ef219b738ccd999af38d7e3d6a3a4589cc73e7b9073a1b519c7d628e4c99e8cc",
           "sha256": "f132607800cb3e0f701f6e6e99407684cf3c4345cb81231bca18505e5115b044",
