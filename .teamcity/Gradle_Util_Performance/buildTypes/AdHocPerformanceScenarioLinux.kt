@@ -5,7 +5,6 @@ import common.applyPerformanceTestSettings
 import common.buildToolGradleParameters
 import common.builtInRemoteBuildCacheNode
 import common.checkCleanM2
-import common.gradleWrapper
 import common.individualPerformanceTestArtifactRules
 import common.performanceTestCommandLine
 import configurations.individualPerformanceTestJavaHome
@@ -13,6 +12,7 @@ import configurations.killAllGradleProcesses
 import jetbrains.buildServer.configs.kotlin.v2019_2.BuildStep
 import jetbrains.buildServer.configs.kotlin.v2019_2.BuildType
 import jetbrains.buildServer.configs.kotlin.v2019_2.ParameterDisplay
+import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.exec
 import jetbrains.buildServer.configs.kotlin.v2019_2.buildSteps.script
 
 object AdHocPerformanceScenarioLinux : BuildType({
@@ -46,9 +46,10 @@ object AdHocPerformanceScenarioLinux : BuildType({
             executionMode = BuildStep.ExecutionMode.ALWAYS
             scriptContent = killAllGradleProcesses
         }
-        gradleWrapper {
+        exec {
             name = "GRADLE_RUNNER"
-            gradleParams = (
+            path = "gradlew"
+            arguments = (
                 performanceTestCommandLine(
                     "clean %templates% performance:performanceAdHocTest",
                     "%baselines%",
