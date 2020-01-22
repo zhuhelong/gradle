@@ -16,8 +16,7 @@
 
 package org.gradle.performance.regression.android
 
-import groovy.transform.stc.ClosureParams
-import groovy.transform.stc.SimpleType
+
 import org.gradle.internal.scan.config.fixtures.GradleEnterprisePluginSettingsFixture
 import org.gradle.internal.service.scopes.VirtualFileSystemServices
 import org.gradle.performance.AbstractCrossBuildPerformanceTest
@@ -47,9 +46,8 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
     @Unroll
     def "faster non-abi change on #testProject (build comparison)"() {
         given:
-        buildSpecForSupportedOptimizations(testProject) {  name ->
+        buildSpecForSupportedOptimizations(testProject) {
             testProject.configureForNonAbiChange(delegate)
-            displayName("non abi change (${name})")
         }
 
         when:
@@ -65,9 +63,8 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
     @Unroll
     def "faster abi-change on #testProject (build comparison)"() {
         given:
-        buildSpecForSupportedOptimizations(testProject) { name ->
+        buildSpecForSupportedOptimizations(testProject) {
             testProject.configureForAbiChange(delegate)
-            displayName("abi change (${name})")
         }
 
         when:
@@ -79,16 +76,17 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
         testProject << [SANTA_TRACKER_KOTLIN, SANTA_TRACKER_JAVA]
     }
 
-    private void buildSpecForSupportedOptimizations(IncrementalAndroidTestProject testProject, @DelegatesTo(GradleBuildExperimentSpec.GradleBuilder) @ClosureParams(value= SimpleType.class, options="java.lang.String") Closure scenarioConfiguration) {
+    private void buildSpecForSupportedOptimizations(IncrementalAndroidTestProject testProject, @DelegatesTo(GradleBuildExperimentSpec.GradleBuilder) Closure scenarioConfiguration) {
         supportedOptimizations(testProject).each {name, Set<Optimization> enabledOptimizations ->
             runner.buildSpec {
                 passChangedFile(delegate, testProject)
                 invocation.args(*enabledOptimizations*.argument)
+                displayName(name)
 
                 final Closure clonedClosure = scenarioConfiguration.clone() as Closure;
                 clonedClosure.setResolveStrategy(Closure.DELEGATE_FIRST);
                 clonedClosure.setDelegate(delegate);
-                clonedClosure.call(name)
+                clonedClosure.call()
             }
         }
     }
