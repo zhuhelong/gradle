@@ -465,6 +465,7 @@ class PerformanceTestPlugin : Plugin<Project> {
             binaryDistributions.binZipRequired = true
             libsRepository.required = true
             maxParallelForks = 1
+            environment = (environment - "CI")
 
             project.findProperty(PropertyNames.baselines)?.let { baselines ->
                 task.configuredBaselines.set(baselines as String)
