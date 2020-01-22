@@ -10,8 +10,8 @@
   },
   "createdBy": {
     "gradle": {
-      "version": "6.2-20191225230022+0000",
-      "buildId": "3ssopi2x3bcfdduqgahtpd5clu"
+      "version": "6.2-20200107194018+0000",
+      "buildId": "nz5y2wynkzdp3mvmynpcm3geay"
     }
   },
   "variants": [
@@ -29,11 +29,11 @@
         {
           "name": "example-dependency-6.2.2.jar",
           "url": "example-dependency-6.2.2.jar",
-          "size": 973,
-          "sha512": "300511d678a1a42d50485b74d8eb728393be7ab18562cb1876c4df0b9882449409668e14c8188bce4c74612e97f06b6b05624faeb418af25fc62de7d6e9a5f8e",
-          "sha256": "42efd1edbcdb7d01bb30f39541a8b245ed6ce23f1eda17bbfebd1c77be554066",
-          "sha1": "1e100c07b401cef861c9e218cb374c77eff7ff02",
-          "md5": "7c1d0a5a2e0f0e25175df2fa5ea896ef"
+          "size": 946,
+          "sha512": "0eecd21158c25341ed939c7ff84a770e8a9a37846ae4fd9e7fd96038180b4bccc2ce0b91faf36b247eef7cbe5dcf3eaf942bc39b4d7085faa03e76f213029637",
+          "sha256": "f9ba8db1116e9b475398b57add11e69ca7f0291758d1c40683a84921b5939b95",
+          "sha1": "551a0d0b4a039706db648064855af32d9addf5db",
+          "md5": "bc78b191dd8c68de3e4b99b07c61c8b2"
         }
       ]
     },
@@ -47,16 +47,15 @@
         "org.gradle.libraryelements": "jar",
         "org.gradle.usage": "java-runtime"
       },
-      "dependencies": [],
       "files": [
         {
           "name": "example-dependency-6.2.2.jar",
           "url": "example-dependency-6.2.2.jar",
-          "size": 973,
-          "sha512": "300511d678a1a42d50485b74d8eb728393be7ab18562cb1876c4df0b9882449409668e14c8188bce4c74612e97f06b6b05624faeb418af25fc62de7d6e9a5f8e",
-          "sha256": "42efd1edbcdb7d01bb30f39541a8b245ed6ce23f1eda17bbfebd1c77be554066",
-          "sha1": "1e100c07b401cef861c9e218cb374c77eff7ff02",
-          "md5": "7c1d0a5a2e0f0e25175df2fa5ea896ef"
+          "size": 946,
+          "sha512": "0eecd21158c25341ed939c7ff84a770e8a9a37846ae4fd9e7fd96038180b4bccc2ce0b91faf36b247eef7cbe5dcf3eaf942bc39b4d7085faa03e76f213029637",
+          "sha256": "f9ba8db1116e9b475398b57add11e69ca7f0291758d1c40683a84921b5939b95",
+          "sha1": "551a0d0b4a039706db648064855af32d9addf5db",
+          "md5": "bc78b191dd8c68de3e4b99b07c61c8b2"
         }
       ]
     },
