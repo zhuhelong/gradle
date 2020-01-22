@@ -26,6 +26,12 @@ class GradleEnterprisePluginSettingsFixture {
         plugins {
             id('${AutoAppliedGradleEnterprisePlugin.ID}') version('${AutoAppliedGradleEnterprisePlugin.VERSION}')
         }
+
+        gradleEnterprise {
+            buildScan {
+                server = "https://e.grdev.net"
+            }
+        }
     """
 
     static void applyEnterprisePlugin(File settingsFile) {
