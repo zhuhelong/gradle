@@ -98,13 +98,13 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
         return testProject == SANTA_TRACKER_KOTLIN
             ? [
             "no optimizations": EnumSet.noneOf(Optimization),
-            "VFS retention": EnumSet.of(Optimization.VFS_RETENTION)
+//            "VFS retention": EnumSet.of(Optimization.VFS_RETENTION)
         ]
             : [
             "no optimizations": EnumSet.noneOf(Optimization),
-            "VFS retention": EnumSet.of(Optimization.VFS_RETENTION),
-            "instant execution": EnumSet.of(Optimization.INSTANT_EXECUTION),
-            "all optimizations": EnumSet.allOf(Optimization)
+//            "VFS retention": EnumSet.of(Optimization.VFS_RETENTION),
+//            "instant execution": EnumSet.of(Optimization.INSTANT_EXECUTION),
+//            "all optimizations": EnumSet.allOf(Optimization)
         ]
     }
 
