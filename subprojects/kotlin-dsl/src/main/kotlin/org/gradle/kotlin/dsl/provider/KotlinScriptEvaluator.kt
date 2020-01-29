@@ -141,7 +141,7 @@ class StandardKotlinScriptEvaluator(
         )
         // TODO:kotlin-dsl remove once not using an EAP
         scriptHandler.repositories.maven {
-            it.setUrl("https://dl.bintray.com/kotlin/kotlin-eap/")
+            it.setUrl("https://dl.bintray.com/kotlin/kotlin-dev/")
         }
     }
 

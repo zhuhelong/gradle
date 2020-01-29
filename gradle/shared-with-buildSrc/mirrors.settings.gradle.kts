@@ -25,13 +25,14 @@ val originalUrls: Map<String, String> = mapOf(
     "gradle-releases" to "https://repo.gradle.org/gradle/libs-releases",
     "gradle-snapshots" to "https://repo.gradle.org/gradle/libs-snapshots",
     "kotlinx" to "https://kotlin.bintray.com/kotlinx/",
-    "kotlineap" to "https://dl.bintray.com/kotlin/kotlin-eap/"
+    "kotlineap" to "https://dl.bintray.com/kotlin/kotlin-dev/"
 )
 
 val mirrorUrls: Map<String, String> =
     System.getenv("REPO_MIRROR_URLS")?.ifBlank { null }?.split(',')?.associate { nameToUrl ->
         val (name, url) = nameToUrl.split(':', limit = 2)
-        name to url
+        if(name == "kotlineap") name to "https://dl.bintray.com/kotlin/kotlin-dev/"
+        else name to url
     } ?: emptyMap()
 
 fun isEc2Agent() = java.net.InetAddress.getLocalHost().getHostName().startsWith("ip-")
