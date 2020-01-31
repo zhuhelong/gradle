@@ -209,20 +209,20 @@ public class ChecksumAndSignatureVerificationOverride implements DependencyVerif
                     }
                     formatter.append("checksums.");
                 }
-                if ((hasMissing.get() || hasUntrusted.get()) && !maybeCompromised.get()) {
-                    // the else is just to avoid telling people to use `--write-verification-metadata` if we suspect compromised dependencies
-                    formatter.node("If the dependency is legit, you will need to update the gradle/verification-metadata.xml file by following the instructions at " + documentationRegistry.getDocumentationFor("dependency_verification", "sec:troubleshooting-verification"));
-                }
                 if (!affectedFiles.isEmpty()) {
                     formatter.blankLine();
-                    formatter.node("For your information here are the files which failed verification:");
+                    formatter.node("These files failed verification:");
+                    formatter.node(gradleUserHome + " (Gradle User Home)");
                     formatter.startChildren();
                     for (String affectedFile : affectedFiles) {
                         formatter.node(affectedFile);
                     }
                     formatter.endChildren();
                     formatter.blankLine();
-                    formatter.node("GRADLE_USERHOME = " + gradleUserHome);
+                }
+                if ((hasMissing.get() || hasUntrusted.get()) && !maybeCompromised.get()) {
+                    // the else is just to avoid telling people to use `--write-verification-metadata` if we suspect compromised dependencies
+                    formatter.node("If the dependency is trustworthy, you will need to update the verification file by following the instructions at " + documentationRegistry.getDocumentationFor("dependency_verification", "sec:troubleshooting-verification"));
                 }
                 if (hasFatalFailure.get()) {
                     String message = formatter.toString();
@@ -251,7 +251,7 @@ public class ChecksumAndSignatureVerificationOverride implements DependencyVerif
         Path path = file.toPath();
         try {
             Path relativize = gradleUserHome.relativize(path);
-            return "GRADLE_USERHOME" + File.separator + relativize;
+            return relativize.toString();
         } catch (IllegalArgumentException e) {
             return file.getAbsolutePath();
         }
