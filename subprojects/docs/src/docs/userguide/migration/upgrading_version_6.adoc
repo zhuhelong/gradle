@@ -33,6 +33,15 @@ Some plugins will break with this new version of Gradle, for example because the
 . Run `gradle wrapper --gradle-version {gradleVersion}` to update the project to {gradleVersion}.
 . Try to run the project and debug any errors using the <<troubleshooting.adoc#troubleshooting, Troubleshooting Guide>>.
 
+[[changes_6.2]]
+== Upgrading from 6.1
+
+There were no breaking changes between Gradle 6.1 and 6.2.
+
+=== Deprecations
+
+There were no deprecations between Gradle 6.1 and 6.2.
+
 [[changes_6.1]]
 == Upgrading from 6.0 and earlier
 
@@ -62,6 +71,14 @@ println("thread pool size = " + consumer.threadPoolSize.get())
 ```
 
 Querying the value of `consumer.threadPoolSize` will produce a deprecation warning if done prior to `producer` completing, as the output file has not yet been generated.
+
+==== Discontinued methods
+The following methods have been discontinued and should no longer be used. They will be removed in Gradle 7.0.
+
+- `BasePluginConvention.setProject(ProjectInternal)`
+- `BasePluginConvention.getProject()`
+- `StartParameter.useEmptySettings()`
+- `StartParameter.isUseEmptySettings()`
 
 [[upgrading_jvm_plugins]]
 ==== Alternative JVM plugins (a.k.a "Software Model")
